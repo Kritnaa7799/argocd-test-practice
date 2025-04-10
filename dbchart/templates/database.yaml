@@ -1,34 +1,33 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: pdb-config
-  namespace: db12
- 
+  namespace: {{ .Values.namespace }}
 data:
-  POSTGRES_DB: kishna
-  POSTGRES_USER: kishna
+  POSTGRES_DB: {{ .Values.postgresql.db }}
+  POSTGRES_USER: {{ .Values.postgresql.user }}
 
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: pdb-secret
-  namespace: db12
- 
+  namespace: {{ .Values.namespace }}
 type: Opaque
 data:
-  POSTGRES_PASSWORD: d3BwYXNzd29yZA==
+  POSTGRES_PASSWORD: {{ .Values.postgresql.password | quote }}
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pdb-deploy
-  namespace: db12
+  namespace: {{ .Values.namespace }}
   labels:
     app: pdb
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: pdb
@@ -40,47 +39,46 @@ spec:
         app: pdb
     spec:
       containers:
-      - name: pdb-container
-        image: postgres:13
-        ports:
-        - containerPort: 5432
-          name: pdb
-        envFrom:
-        - configMapRef:
-            name: pdb-config
-        - secretRef:
-            name: pdb-secret
-        volumeMounts:
-        - name: pdb-data
-          mountPath: /var/lib/mysql
+        - name: pdb-container
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.service.port }}
+              name: pdb
+          envFrom:
+            - configMapRef:
+                name: pdb-config
+            - secretRef:
+                name: pdb-secret
+          volumeMounts:
+            - name: pdb-data
+              mountPath: /var/lib/mysql
       volumes:
-      - name: pdb-data
-        persistentVolumeClaim:
-          claimName: pdb-pvc
+        - name: pdb-data
+          persistentVolumeClaim:
+            claimName: pdb-pvc
 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: pdb-pvc
-  namespace: db12
+  namespace: {{ .Values.namespace }}
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ .Values.pvc.storage }}
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: pdb-service
-  namespace: db12
- 
+  namespace: {{ .Values.namespace }}
 spec:
   ports:
-  - port: 5432
-    targetPort: 5432
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
   selector:
     app: pdb

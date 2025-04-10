@@ -2,11 +2,11 @@
 db:
   name: kishna
   user: kishna
-  host: pdb-service
+  host: pdb-service.db
   password: d3BwYXNzd29yZA==  # Make sure this is base64 encoded
 
 redis:
-  host: redis-service.redis1
+  host: redis-service.rd
 
 # Flask application settings
 flask:
